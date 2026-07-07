@@ -321,99 +321,149 @@
 
     function onScanFailure(error) { }
 
-    function procesarUrlPase(urlTexto) {
-        if (!urlTexto.includes("?")) {
-            alert("❌ Código QR Inválido.");
-            regresarAlEscaner(true);
-            return;
-        }
+   function procesarUrlPase(urlTexto) {
 
-        const urlParams = new URLSearchParams(urlTexto.substring(urlTexto.indexOf("?")));
-        const tipo = urlParams.get("t");
-        const nombre = urlParams.get("n");
-        const calle = urlParams.get("c");
-        const numero = urlParams.get("num");
-        const hash = urlParams.get("h");
-        const idQR = urlParams.get("id");
+    if (!urlTexto.includes("?")) {
+        alert("❌ Código QR Inválido.");
+        regresarAlEscaner(true);
+        return;
+    }
 
-        if (!calle || !numero || !hash) {
-            alert("❌ Datos de acceso corruptos.");
-            regresarAlEscaner(true);
-            return;
-        }
+    const urlParams = new URLSearchParams(
+        urlTexto.substring(urlTexto.indexOf("?"))
+    );
 
-        const stringFirma = calle.trim().toLowerCase() + "-" + numero.trim().toLowerCase();
-        const hashEsperado = btoa(stringFirma).replace(/=/g, "");
+    const tipo = urlParams.get("t");
+    const nombre = urlParams.get("n");
+    const calle = urlParams.get("c");
+    const numero = urlParams.get("num");
+    const hash = urlParams.get("h");
+    const idQR = urlParams.get("id");
 
-        if (hash !== hashEsperado) {
-            alert("🚨 Código QR inválido o firma incorrecta.");
-            regresarAlEscaner(true);
-            return;
-        }
+    if (!calle || !numero || !hash) {
+        alert("❌ Datos de acceso corruptos.");
+        regresarAlEscaner(true);
+        return;
+    }
 
-       datosPaseActual = {
-    tipo,
-    nombre,
-    calle,
-    numero,
-    idQR
-};
+    const stringFirma =
+        calle.trim().toLowerCase() +
+        "-" +
+        numero.trim().toLowerCase();
 
-       if (tipo === 'r') {
+    const hashEsperado =
+        btoa(stringFirma).replace(/=/g, "");
 
-    fetch(WEB_APP_RESIDENTES, {
-        method: "POST",
-        body: JSON.stringify({
-            accion: "consultarQR",
-            idQR: idQR
+    if (hash !== hashEsperado) {
+        alert("🚨 Código QR inválido o firma incorrecta.");
+        regresarAlEscaner(true);
+        return;
+    }
+
+    datosPaseActual = {
+        tipo,
+        nombre,
+        calle,
+        numero,
+        idQR
+    };
+
+    //==================================================
+    // RESIDENTE
+    //==================================================
+
+    if (tipo === "r") {
+
+        fetch(WEB_APP_RESIDENTES, {
+
+            method: "POST",
+
+            body: JSON.stringify({
+
+                accion: "consultarQR",
+                idQR: idQR
+
+            })
+
         })
-    })
-    .then(r => r.json())
-    .then(respuesta => {
 
-        if (!respuesta.ok) {
-            alert(respuesta.mensaje);
+        .then(r => r.json())
+
+        .then(respuesta => {
+
+            if (!respuesta.ok) {
+
+                alert(respuesta.mensaje);
+                regresarAlEscaner(true);
+                return;
+
+            }
+
+            datosPaseActual = {
+
+                tipo: "r",
+                idQR: idQR,
+                nombre: respuesta.nombre,
+                calle: respuesta.calle,
+                numero: respuesta.numero
+
+            };
+
+            document.getElementById("wrapperEscaner").style.display = "none";
+            document.getElementById("panelResidente").style.display = "block";
+
+            document.getElementById("resNombre").innerText =
+                respuesta.nombre;
+
+            document.getElementById("resDomicilio").innerText =
+                respuesta.calle + " #" + respuesta.numero;
+
+            document.getElementById("resFechaHora").innerText =
+                new Date().toLocaleString("es-MX");
+
+        })
+
+        .catch(error => {
+
+            console.error(error);
+
+            alert("Error consultando el QR.");
+
             regresarAlEscaner(true);
-            return;
-        }
 
-        datosPaseActual = {
-            tipo,
-            nombre: respuesta.nombre,
-            calle: respuesta.calle,
-            numero: respuesta.numero,
-            idQR
-        };
+        });
 
-        document.getElementById('wrapperEscaner').style.display = 'none';
-        document.getElementById('panelResidente').style.display = 'block';
+        return;
 
-        document.getElementById('resNombre').innerText = respuesta.nombre;
-        document.getElementById('resDomicilio').innerText =
-            `${respuesta.calle} #${respuesta.numero}`;
+    }
 
-        const ahora = new Date();
-        document.getElementById('resFechaHora').innerText =
-            ahora.toLocaleString('es-MX');
+    //==================================================
+    // VISITA
+    //==================================================
 
-    });
+    document.getElementById("wrapperEscaner").style.display = "none";
+    document.getElementById("panelEvidencias").style.display = "block";
 
-    return;
+    document.getElementById("evCalle").value = calle;
+    document.getElementById("evNumero").value = numero;
+    document.getElementById("evNombre").value = "";
+
+    fotosCapturadas = {
+        ine: null,
+        carro: null
+    };
+
+    removerMiniatura(
+        "btnIne",
+        "🪪 Tomar Foto de la INE"
+    );
+
+    removerMiniatura(
+        "btnCarro",
+        "🚗 Tomar Foto del Carro / Placas"
+    );
 
 }
-         else {
-            document.getElementById('wrapperEscaner').style.display = 'none';
-            document.getElementById('panelEvidencias').style.display = 'block';
-            
-            document.getElementById('evCalle').value = calle;
-            document.getElementById('evNumero').value = numero;
-            document.getElementById('evNombre').value = "";
-            
-            fotosCapturadas = { ine: null, carro: null };
-            removerMiniatura('btnIne', "🪪 Tomar Foto de la INE");
-            removerMiniatura('btnCarro', "🚗 Tomar Foto del Carro / Placas");
-        }
-
     function removerMiniatura(btnId, textoOriginal) {
         const btn = document.getElementById(btnId);
         btn.className = "btn btn-foto";
@@ -561,27 +611,72 @@ async function comprimirImagen(file) {
             alert("Error de conexión.");
         });
     }
+//--------------------------------------------------
+// REGISTRAR SALIDA DEL RESIDENTE
+//--------------------------------------------------
 
-    function regresarAlEscaner(forzarCamara) {
-        if (forzarCamara) {
-            window.location.href = window.location.origin + window.location.pathname;
-        } else {
-            document.getElementById('panelEvidencias').style.display = 'none';
-            document.getElementById('panelResidente').style.display = 'none';
-            document.getElementById('wrapperEscaner').style.display = 'block';
-            document.getElementById('areaControlesCamara').style.display = 'none';
-            datosPaseActual = null;
-            iniciarEscaner();
-        }
+function registrarSalidaResidente() {
+
+    if (!datosPaseActual || !datosPaseActual.idQR) {
+        alert("No existe información del residente.");
+        return;
     }
 
-    function verificarDatosAlCargar() {
-        if (window.location.search) {
-            procesarUrlPase(window.location.href);
-        } else {
-            iniciarEscaner();
-        }
+    fetch(WEB_APP_RESIDENTES, {
+
+        method: "POST",
+
+        body: JSON.stringify({
+
+            accion: "registrarSalida",
+            idQR: datosPaseActual.idQR
+
+        })
+
+    })
+
+    .then(r => r.json())
+
+    .then(respuesta => {
+
+        alert(respuesta.mensaje);
+
+        regresarAlEscaner(true);
+
+    })
+
+    .catch(error => {
+
+        console.error(error);
+
+        alert("Error registrando salida.");
+
+        regresarAlEscaner(true);
+
+    });
+
+}
+   function regresarAlEscaner(forzarCamara) {
+
+    document.getElementById("panelResidente").style.display = "none";
+    document.getElementById("panelEvidencias").style.display = "none";
+    document.getElementById("wrapperEscaner").style.display = "block";
+
+    datosPaseActual = null;
+
+    if (forzarCamara) {
+
+        window.location.href =
+            window.location.origin +
+            window.location.pathname;
+
+    } else {
+
+        iniciarEscaner();
+
     }
+
+}
 
     window.addEventListener('DOMContentLoaded', verificarDatosAlCargar);
 </script>
