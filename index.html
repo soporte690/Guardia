@@ -187,7 +187,15 @@
             </div>
         </div>
 
-        <button class="btn btn-success" style="background: #ffffff; color: #064e3b;" onclick="regresarAlEscaner(true)">ACEPTAR Y CONTINUAR</button>
+       <button
+    id="btnAccionResidente"
+    class="btn btn-success"
+    style="background:#ffffff;color:#064e3b;"
+    onclick="accionResidente()">
+
+    REGISTRAR ENTRADA
+
+</button>
     </div>
 
     <div id="panelEvidencias" class="panel-visita" style="display: none;">
@@ -378,12 +386,13 @@
         }
 
         datosPaseActual = {
-            tipo,
-            nombre: respuesta.nombre,
-            calle: respuesta.calle,
-            numero: respuesta.numero,
-            idQR
-        };
+    tipo: "r",
+    idQR: idQR,
+    nombre: respuesta.nombre,
+    calle: respuesta.calle,
+    numero: respuesta.numero,
+    estatus: respuesta.estatus
+};
 
         document.getElementById('wrapperEscaner').style.display = 'none';
         document.getElementById('panelResidente').style.display = 'block';
